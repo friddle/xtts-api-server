@@ -16,10 +16,6 @@ RUN apt-get update && \
     git python3-pip make g++ ffmpeg vim build-essential cmake ninja-build wget sudo && \
     rm -rf /var/lib/apt/lists/*
 
-# Create symlink for python3.10
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
-    update-alternatives --install /usr/bin/python3.10 python3.10 /usr/bin/python3.10 1
-
 # Upgrade pip and install virtualenv
 RUN python3.10 -m pip install --upgrade pip setuptools wheel ninja virtualenv --break-system-packages
 
