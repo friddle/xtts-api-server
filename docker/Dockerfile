@@ -16,7 +16,7 @@ RUN apt-get update && \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 
 # Upgrade pip and install virtualenv
-RUN python3.12 -m pip install --upgrade pip setuptools wheel ninja virtualenv
+RUN python3.12 -m pip install --upgrade pip setuptools wheel ninja virtualenv --break-system-packages
 
 # Copy the application source code to /app directory and change the workdir to /app
 # COPY . /app
