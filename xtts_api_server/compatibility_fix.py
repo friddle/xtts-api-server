@@ -7,6 +7,7 @@ import sys
 import logging
 import types
 import inspect
+import builtins
 
 def patch_issubclass():
     """
@@ -57,7 +58,6 @@ def patch_coqpit():
 
 def apply_all_patches():
     """Apply all compatibility patches."""
-    import builtins
     patch_issubclass()
     patch_coqpit()
 
