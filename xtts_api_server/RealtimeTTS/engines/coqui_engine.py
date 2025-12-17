@@ -1,3 +1,6 @@
+# Apply PyTorch 2.6+ compatibility patch before importing TTS
+import xtts_api_server.pytorch_fix
+
 from xtts_api_server.tts_funcs import official_model_list
 from torch.multiprocessing import Process, Pipe, Event, set_start_method
 from .base_engine import BaseEngine
@@ -138,6 +141,47 @@ class CoquiEngine(BaseEngine):
         logging.basicConfig(format='CoquiEngine: %(message)s', level=loglevel)
 
         logging.info(f"Starting CoquiEngine")
+        
+        # Fix for PyTorch 2.6+ where weights_only defaults to True
+        # This allows loading of the XttsConfig class safely
+        try:
+            import torch
+            if hasattr(torch.serialization, 'add_safe_globals'):
+                torch.serialization.add_safe_globals([XttsConfig])
+                logging.info("Added XttsConfig to safe globals for PyTorch 2.6+")
+        except Exception as e:
+            logging.warning(f"Could not add XttsConfig to safe globals: {e}")
+            
+        # Additional fix for PyTorch 2.6+ - patch torch.load and TTS.utils.io.load_fsspec
+        try:
+            import torch
+            import TTS.utils.io
+            
+            # Patch torch.load
+            original_torch_load = torch.load
+            
+            def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
+                # Set weights_only=False if not specified
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+            
+            torch.load = patched_torch_load
+            
+            # Patch TTS.utils.io.load_fsspec
+            original_load_fsspec = TTS.utils.io.load_fsspec
+            
+            def patched_load_fsspec(model_path, map_location=None, **kwargs):
+                # Ensure weights_only is set to False for compatibility
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return original_load_fsspec(model_path, map_location=map_location, **kwargs)
+            
+            TTS.utils.io.load_fsspec = patched_load_fsspec
+            
+            logging.info("Patched torch.load and TTS.utils.io.load_fsspec for PyTorch 2.6+ compatibility")
+        except Exception as e:
+            logging.warning(f"Could not patch torch functions: {e}")
 
 
         def get_conditioning_latents(filenames: Union[str, List[str]]):
@@ -286,6 +330,38 @@ class CoquiEngine(BaseEngine):
 
                 config = load_config((os.path.join(local_model_path, "config.json")))
                 tts = setup_tts_model(config)
+                
+                # Apply PyTorch 2.6+ compatibility patch right before loading checkpoint
+                try:
+                    import torch
+                    import TTS.utils.io
+                    
+                    # Patch torch.load
+                    original_torch_load = torch.load
+                    
+                    def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
+                        # Set weights_only=False if not specified
+                        if 'weights_only' not in kwargs:
+                            kwargs['weights_only'] = False
+                        return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+                    
+                    torch.load = patched_torch_load
+                    
+                    # Patch TTS.utils.io.load_fsspec
+                    original_load_fsspec = TTS.utils.io.load_fsspec
+                    
+                    def patched_load_fsspec(model_path, map_location=None, **kwargs):
+                        # Ensure weights_only is set to False for compatibility
+                        if 'weights_only' not in kwargs:
+                            kwargs['weights_only'] = False
+                        return original_load_fsspec(model_path, map_location=map_location, **kwargs)
+                    
+                    TTS.utils.io.load_fsspec = patched_load_fsspec
+                    
+                    logging.info("Applied PyTorch 2.6+ compatibility patch before loading checkpoint")
+                except Exception as e:
+                    logging.warning(f"Could not apply PyTorch compatibility patch: {e}")
+                
                 tts.load_checkpoint(
                     config,
                     checkpoint_path=os.path.join(local_model_path, "model.pth"),
@@ -314,7 +390,8 @@ class CoquiEngine(BaseEngine):
             gpt_cond_latent, speaker_embedding = get_conditioning_latents(cloning_reference_wav)
 
         except Exception as e:
-            logging.exception(f"Error initializing main coqui engine model: {e}")
+            logging.error(f"Error initializing main coqui engine model: {e}")
+            logging.debug(traceback.format_exc())
             raise
 
         ready_event.set()

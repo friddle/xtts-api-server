@@ -1,5 +1,8 @@
 # tts.py
 
+# Apply PyTorch 2.6+ compatibility patch before importing TTS
+import xtts_api_server.pytorch_fix
+
 import torch
 import torchaudio
 
@@ -205,7 +208,80 @@ class TTSWrapper:
 
         config.load_json(str(config_path))
         
+        # Fix for PyTorch 2.6+ where weights_only defaults to True
+        # This allows loading of the XttsConfig class safely
+        try:
+            import torch
+            if hasattr(torch.serialization, 'add_safe_globals'):
+                torch.serialization.add_safe_globals([XttsConfig])
+                logger.info("Added XttsConfig to safe globals for PyTorch 2.6+")
+        except Exception as e:
+            logger.warning(f"Could not add XttsConfig to safe globals: {e}")
+            
+        # Additional fix for PyTorch 2.6+ - patch torch.load and TTS.utils.io.load_fsspec
+        try:
+            import torch
+            import TTS.utils.io
+            
+            # Patch torch.load
+            original_torch_load = torch.load
+            
+            def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
+                # Set weights_only=False if not specified
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+            
+            torch.load = patched_torch_load
+            
+            # Patch TTS.utils.io.load_fsspec
+            original_load_fsspec = TTS.utils.io.load_fsspec
+            
+            def patched_load_fsspec(model_path, map_location=None, **kwargs):
+                # Ensure weights_only is set to False for compatibility
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return original_load_fsspec(model_path, map_location=map_location, **kwargs)
+            
+            TTS.utils.io.load_fsspec = patched_load_fsspec
+            
+            logger.info("Patched torch.load and TTS.utils.io.load_fsspec for PyTorch 2.6+ compatibility")
+        except Exception as e:
+            logger.warning(f"Could not patch torch functions: {e}")
+        
         self.model = Xtts.init_from_config(config)
+        
+        # Apply PyTorch 2.6+ compatibility patch right before loading checkpoint
+        try:
+            import torch
+            import TTS.utils.io
+            
+            # Patch torch.load
+            original_torch_load = torch.load
+            
+            def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
+                # Set weights_only=False if not specified
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+            
+            torch.load = patched_torch_load
+            
+            # Patch TTS.utils.io.load_fsspec
+            original_load_fsspec = TTS.utils.io.load_fsspec
+            
+            def patched_load_fsspec(model_path, map_location=None, **kwargs):
+                # Ensure weights_only is set to False for compatibility
+                if 'weights_only' not in kwargs:
+                    kwargs['weights_only'] = False
+                return original_load_fsspec(model_path, map_location=map_location, **kwargs)
+            
+            TTS.utils.io.load_fsspec = patched_load_fsspec
+            
+            logger.info("Applied PyTorch 2.6+ compatibility patch before loading checkpoint")
+        except Exception as e:
+            logger.warning(f"Could not apply PyTorch compatibility patch: {e}")
+        
         self.model.load_checkpoint(config,use_deepspeed=self.deepspeed, checkpoint_dir=str(checkpoint_dir))
         self.model.to(self.device)
 
