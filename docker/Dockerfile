@@ -15,8 +15,9 @@ RUN apt-get update && \
 # Set python3.12 as default python3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 
-# Upgrade pip and install virtualenv
-RUN python3.12 -m pip install --upgrade pip setuptools wheel ninja virtualenv --break-system-packages
+# Remove system-installed wheel package and upgrade pip
+RUN apt-get remove -y python3-wheel && \
+    python3.12 -m pip install --upgrade pip setuptools wheel ninja virtualenv --break-system-packages
 
 # Copy the application source code to /app directory and change the workdir to /app
 # COPY . /app
