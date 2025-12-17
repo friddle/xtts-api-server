@@ -8,22 +8,24 @@ import pickle
 import logging
 import sys
 
-# Store the original torch.load function
-_original_torch_load = torch.load
+# Store the original torch.load function only if not already patched
+if not hasattr(torch.load, '_pytorch26_patched'):
+    _original_torch_load = torch.load
 
-def patched_torch_load(f, map_location=None, pickle_module=pickle, **kwargs):
-    """
-    Patched version of torch.load that handles weights_only parameter for TTS compatibility.
-    """
-    # If weights_only is not specified, set it to False for TTS compatibility
-    if 'weights_only' not in kwargs:
-        kwargs['weights_only'] = False
-    
-    # Call the original torch.load with the modified parameters
-    return _original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+    def patched_torch_load(f, map_location=None, pickle_module=pickle, **kwargs):
+        """
+        Patched version of torch.load that handles weights_only parameter for TTS compatibility.
+        """
+        # If weights_only is not specified, set it to False for TTS compatibility
+        if 'weights_only' not in kwargs:
+            kwargs['weights_only'] = False
+        
+        # Call the original torch.load with the modified parameters
+        return _original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
 
-# Apply the monkey patch
-torch.load = patched_torch_load
+    # Mark as patched and apply the monkey patch
+    patched_torch_load._pytorch26_patched = True
+    torch.load = patched_torch_load
 
 # Also add safe globals for XttsConfig if available
 def add_safe_globals():

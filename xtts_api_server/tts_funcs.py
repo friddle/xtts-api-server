@@ -218,36 +218,45 @@ class TTSWrapper:
         except Exception as e:
             logger.warning(f"Could not add XttsConfig to safe globals: {e}")
             
-        # Additional fix for PyTorch 2.6+ - patch torch.load and TTS.utils.io.load_fsspec
+        # Fix for PyTorch 2.6+ - patch torch.load and TTS.utils.io.load_fsspec
+        # Only patch if not already patched to avoid recursion
         try:
             import torch
             import TTS.utils.io
             
-            # Patch torch.load
-            original_torch_load = torch.load
-            
-            def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
-                # Set weights_only=False if not specified
-                if 'weights_only' not in kwargs:
-                    kwargs['weights_only'] = False
-                return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
-            
-            torch.load = patched_torch_load
-            
-            # Patch TTS.utils.io.load_fsspec
-            original_load_fsspec = TTS.utils.io.load_fsspec
-            
-            def patched_load_fsspec(model_path, map_location=None, **kwargs):
-                # Ensure weights_only is set to False for compatibility
-                if 'weights_only' not in kwargs:
-                    kwargs['weights_only'] = False
-                return original_load_fsspec(model_path, map_location=map_location, **kwargs)
-            
-            TTS.utils.io.load_fsspec = patched_load_fsspec
-            
-            logger.info("Patched torch.load and TTS.utils.io.load_fsspec for PyTorch 2.6+ compatibility")
+            # Check if torch.load is already patched
+            if not hasattr(torch.load, '_pytorch26_patched'):
+                # Store the original function
+                original_torch_load = torch.load
+                
+                def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
+                    # Set weights_only=False if not specified
+                    if 'weights_only' not in kwargs:
+                        kwargs['weights_only'] = False
+                    return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+                
+                # Mark as patched and apply
+                patched_torch_load._pytorch26_patched = True
+                torch.load = patched_torch_load
+                
+            # Check if TTS.utils.io.load_fsspec is already patched
+            if not hasattr(TTS.utils.io.load_fsspec, '_pytorch26_patched'):
+                # Store the original function
+                original_load_fsspec = TTS.utils.io.load_fsspec
+                
+                def patched_load_fsspec(model_path, map_location=None, **kwargs):
+                    # Ensure weights_only is set to False for compatibility
+                    if 'weights_only' not in kwargs:
+                        kwargs['weights_only'] = False
+                    return original_load_fsspec(model_path, map_location=map_location, **kwargs)
+                
+                # Mark as patched and apply
+                patched_load_fsspec._pytorch26_patched = True
+                TTS.utils.io.load_fsspec = patched_load_fsspec
+                
+            logger.info("Applied PyTorch 2.6+ compatibility patch")
         except Exception as e:
-            logger.warning(f"Could not patch torch functions: {e}")
+            logger.warning(f"Could not apply PyTorch compatibility patch: {e}")
         
         self.model = Xtts.init_from_config(config)
         
