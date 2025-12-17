@@ -1,5 +1,5 @@
 # Use an official NVIDIA base image with CUDA support
-FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
 
 # Set label for the docker image description
 LABEL description="Docker image for xtts-api-server"
@@ -8,7 +8,7 @@ LABEL description="Docker image for xtts-api-server"
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
     python3-dev portaudio19-dev libportaudio2 libasound2-dev libportaudiocpp0 \
-    git python3 python3-pip make g++ ffmpeg && \
+    git python3 python3-pip make g++ ffmpeg vim build-essential cmake ninja-build wget sudo && \
     rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip and install virtualenv
