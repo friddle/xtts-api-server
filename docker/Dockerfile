@@ -41,10 +41,14 @@ RUN python3.10 -m pip install -r requirements.txt
 COPY . /app
 RUN python3.10 -m pip install -e .
 
+# Copy the startup script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Expose the container ports
 EXPOSE 8020
 # Create workspace directory for persistent storage
 VOLUME ["/workspace"]
 
 # Run xtts_api_server when the container starts
-CMD ["bash", "-c", "python3.10 -m xtts_api_server -hs 0.0.0.0 -p 8020 -d cuda -sf /workspace/speak -mf /workspace -ms api --listen --use-cache --deepspeed --streaming-mode-improve"]
+CMD ["/app/start.sh"]
