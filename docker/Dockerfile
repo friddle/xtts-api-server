@@ -24,7 +24,7 @@ RUN python3.11 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Upgrade pip and install required packages in virtual environment
-RUN python3.11 -n pip install --upgrade pip setuptools wheel ninja virtualenv
+RUN python3.11 -m pip install --upgrade pip setuptools wheel ninja virtualenv
 
 # Copy the application source code to /app directory and change the workdir to /app
 # COPY . /app
