@@ -203,6 +203,9 @@ class CoquiEngine(BaseEngine):
             I am sorry, it's a mess and in a terrible state.
             It needs urgent rework but currently have other more important things to do.
             """
+            # Ensure json module is imported in this subprocess
+            import json
+            
             if not isinstance(filenames, list):
                 filenames = [filenames]
 
