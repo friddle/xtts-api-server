@@ -341,7 +341,44 @@ class CoquiEngine(BaseEngine):
             if local_model_path:
                 logging.debug (f"Starting TTS with local path from {local_model_path} ")
 
-                config = load_config((os.path.join(local_model_path, "config.json")))
+                # Apply compatibility patches before loading config
+                try:
+                    from xtts_api_server.compatibility_fix import patch_coqpit
+                    patch_coqpit()
+                except Exception as e:
+                    logging.warning(f"Could not apply compatibility patch: {e}")
+
+                # Try to load config with error handling for type mismatches
+                try:
+                    config = load_config((os.path.join(local_model_path, "config.json")))
+                except ValueError as e:
+                    error_msg = str(e)
+                    if "does not match" in error_msg and "field type" in error_msg:
+                        # Try to load the config manually and fix type issues
+                        import json
+                        from TTS.config import load_config as original_load_config
+                        
+                        with open(os.path.join(local_model_path, "config.json"), 'r') as f:
+                            config_dict = json.load(f)
+                        
+                        # Apply our patch again and try loading
+                        try:
+                            from xtts_api_server.compatibility_fix import patch_coqpit
+                            patch_coqpit()
+                            config = original_load_config(os.path.join(local_model_path, "config.json"))
+                        except Exception as e2:
+                            logging.warning(f"Failed to load config even after patch: {e2}")
+                            # Last resort: try to manually create a config
+                            from TTS.config import BaseTTSConfig
+                            config = BaseTTSConfig()
+                            # Load only the safe fields
+                            for key, value in config_dict.items():
+                                try:
+                                    setattr(config, key, value)
+                                except Exception:
+                                    pass
+                    else:
+                        raise
                 tts = setup_tts_model(config)
                 
                 # Apply PyTorch 2.6+ compatibility patch right before loading checkpoint
@@ -386,7 +423,44 @@ class CoquiEngine(BaseEngine):
                 model_path = os.path.join(get_user_data_dir("tts"), model_name.replace("/", "--"))
                 logging.debug (f"Starting TTS with autoupdate from {model_path} ")
 
-                config = load_config((os.path.join(model_path, "config.json")))
+                # Apply compatibility patches before loading config
+                try:
+                    from xtts_api_server.compatibility_fix import patch_coqpit
+                    patch_coqpit()
+                except Exception as e:
+                    logging.warning(f"Could not apply compatibility patch: {e}")
+
+                # Try to load config with error handling for type mismatches
+                try:
+                    config = load_config((os.path.join(model_path, "config.json")))
+                except ValueError as e:
+                    error_msg = str(e)
+                    if "does not match" in error_msg and "field type" in error_msg:
+                        # Try to load the config manually and fix type issues
+                        import json
+                        from TTS.config import load_config as original_load_config
+                        
+                        with open(os.path.join(model_path, "config.json"), 'r') as f:
+                            config_dict = json.load(f)
+                        
+                        # Apply our patch again and try loading
+                        try:
+                            from xtts_api_server.compatibility_fix import patch_coqpit
+                            patch_coqpit()
+                            config = original_load_config(os.path.join(model_path, "config.json"))
+                        except Exception as e2:
+                            logging.warning(f"Failed to load config even after patch: {e2}")
+                            # Last resort: try to manually create a config
+                            from TTS.config import BaseTTSConfig
+                            config = BaseTTSConfig()
+                            # Load only the safe fields
+                            for key, value in config_dict.items():
+                                try:
+                                    setattr(config, key, value)
+                                except Exception:
+                                    pass
+                    else:
+                        raise
                 tts = setup_tts_model(config)
                 tts.load_checkpoint(
                     config,
