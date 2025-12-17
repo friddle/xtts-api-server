@@ -7,16 +7,20 @@ LABEL description="Docker image for xtts-api-server"
 # Install required packages (avoid cache to reduce image size)
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-    python3.12 python3.12-dev python3.12-venv python3.12-lib2to3 \
+    python3.12 python3.12-dev python3.12-venv python3.12-lib2to3 python3-full \
     portaudio19-dev libportaudio2 libasound2-dev libportaudiocpp0 \
-    git python3-pip make g++ ffmpeg vim build-essential cmake ninja-build wget sudo && \
+    git make g++ ffmpeg vim build-essential cmake ninja-build wget sudo && \
     rm -rf /var/lib/apt/lists/*
 
 # Set python3.12 as default python3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 
-# Install additional Python packages without upgrading system packages
-RUN python3.12 -m pip install --upgrade pip setuptools ninja virtualenv --break-system-packages
+# Create a virtual environment to avoid system package conflicts
+RUN python3.12 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Upgrade pip and install required packages in virtual environment
+RUN pip install --upgrade pip setuptools wheel ninja virtualenv
 
 # Copy the application source code to /app directory and change the workdir to /app
 # COPY . /app
