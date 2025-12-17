@@ -35,16 +35,26 @@ def patch_coqpit():
     """
     try:
         import coqpit
+        # Store the original function to avoid recursion
         original_deserialize = coqpit.coqpit._deserialize
         
         def safe_deserialize(value, field_type):
             try:
                 return original_deserialize(value, field_type)
-            except TypeError as e:
-                if "issubclass() arg 1 must be a class" in str(e):
+            except (TypeError, ValueError) as e:
+                # Handle various type checking errors
+                error_msg = str(e)
+                if "issubclass() arg 1 must be a class" in error_msg:
                     # Handle the case where field_type is not a class
                     if not inspect.isclass(field_type):
                         return value
+                elif "does not match" in error_msg and "field type" in error_msg:
+                    # Handle type mismatch errors, particularly for union types
+                    # For 'float | list[float]' type, if value is a float, accept it
+                    if "float | list[float]" in error_msg and isinstance(value, float):
+                        return value
+                    # For other type mismatches, try to return the value as-is
+                    return value
                 # Re-raise the error if it's a different issue
                 raise
         
