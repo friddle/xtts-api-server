@@ -29,6 +29,10 @@ RUN python3.10 -m pip install --upgrade pip setuptools wheel ninja virtualenv
 # Install Python dependencies
 RUN python3.10 -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
 RUN python3.10 -m pip install deepspeed
+
+# Install compatible versions of TTS and transformers
+RUN python3.10 -m pip install 'coqui-tts[languages]==0.24.1' 'transformers==4.36.2' --no-deps
+RUN python3.10 -m pip install typing-extensions dataclasses
 # Expose the container ports
 EXPOSE 8020
 
