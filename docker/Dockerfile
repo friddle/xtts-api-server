@@ -7,7 +7,7 @@ LABEL description="Docker image for xtts-api-server"
 # Install required packages (avoid cache to reduce image size)
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-    python3.12 python3.12-dev python3.12-venv python3.12-distutils python3.12-lib2to3 \
+    python3.12 python3.12-dev python3.12-venv python3.12-lib2to3 \
     portaudio19-dev libportaudio2 libasound2-dev libportaudiocpp0 \
     git python3-pip make g++ ffmpeg vim build-essential cmake ninja-build wget sudo && \
     rm -rf /var/lib/apt/lists/*
