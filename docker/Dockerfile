@@ -42,7 +42,7 @@ COPY . /app
 RUN python3.10 -m pip install -e .
 
 # Copy the startup script
-COPY start.sh /app/start.sh
+COPY docker/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Expose the container ports
