@@ -26,13 +26,20 @@ RUN pip install --upgrade pip setuptools wheel ninja virtualenv
 # COPY . /app
 # WORKDIR /app
 
+# Copy the application source code to /app directory
+
 # Install Python dependencies
-RUN python3.12 -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128 --break-system-packages
-RUN python3.12 -m pip install deepspeed --break-system-packages
-RUN python3.12 -m pip install xtts-api-server --break-system-packages
+RUN pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+RUN pip install deepspeed
+COPY . /app
+WORKDIR /app
+RUN pip install -e .
 
 # Expose the container ports
 EXPOSE 8020
+
+# Create workspace directory for persistent storage
+VOLUME ["/workspace"]
 
 # Run xtts_api_server when the container starts
 CMD ["bash", "-c", "python3.12 -m xtts_api_server -hs 0.0.0.0 -p 8020 -d cuda -sf /workspace/speak -mf /workspace -ms api --listen --use-cache --deepspeed --streaming-mode-improve"]
