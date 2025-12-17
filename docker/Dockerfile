@@ -19,12 +19,12 @@ RUN python3 -m pip install --upgrade pip setuptools wheel ninja virtualenv
 # WORKDIR /app
 
 # Install Python dependencies
-RUN pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
-RUN pip install deepspeed
-RUN pip install xtts-api-server
+RUN pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128 --break-system-packages
+RUN pip install deepspeed --break-system-packages
+RUN pip install xtts-api-server --break-system-packages
 
 # Expose the container ports
 EXPOSE 8020
 
 # Run xtts_api_server when the container starts
-CMD ["bash", "-c", "python3 -m xtts_api_server --listen -p 8020 -t 'http://localhost:8020' -sf 'xtts-server/speakers' -o 'xtts-server/output' -mf 'xtts-server/models' --deepspeed"]
+CMD ["bash", "-c", "python3 -m xtts_api_server -hs 0.0.0.0 -p 8020 -d cuda -sf /workspace/speak -mf /workspace -ms api --listen --use-cache --deepspeed --streaming-mode-improve"]
