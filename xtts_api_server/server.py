@@ -1,3 +1,7 @@
+# Apply compatibility fixes before importing other modules
+from xtts_api_server.compatibility_fix import apply_all_patches
+apply_all_patches()
+
 from TTS.api import TTS
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware

@@ -1,6 +1,10 @@
 # Apply PyTorch 2.6+ compatibility patch before importing TTS
 import xtts_api_server.pytorch_fix
 
+# Apply additional compatibility fixes
+from xtts_api_server.compatibility_fix import apply_all_patches
+apply_all_patches()
+
 from xtts_api_server.tts_funcs import official_model_list
 from torch.multiprocessing import Process, Pipe, Event, set_start_method
 from .base_engine import BaseEngine

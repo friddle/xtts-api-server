@@ -26,20 +26,23 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Upgrade pip and install required packages in virtual environment
 RUN python3.10 -m pip install --upgrade pip setuptools wheel ninja virtualenv
 
-# Install Python dependencies
+# Copy requirements.txt first to leverage Docker layer caching
+COPY requirements.txt /app/requirements.txt
+WORKDIR /app
+
+# Install Python dependencies from requirements.txt
 RUN python3.10 -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
 RUN python3.10 -m pip install deepspeed
-
-# Install compatible versions of TTS and transformers
 RUN python3.10 -m pip install 'coqui-tts[languages]==0.24.1' 'transformers==4.36.2' --no-deps
 RUN python3.10 -m pip install typing-extensions dataclasses
+RUN python3.10 -m pip install -r requirements.txt
+
+# Copy the rest of the application code
+COPY . /app
+RUN python3.10 -m pip install -e .
+
 # Expose the container ports
 EXPOSE 8020
-
-
-COPY . /app
-WORKDIR /app
-RUN python3.10 -m pip install -e .
 # Create workspace directory for persistent storage
 VOLUME ["/workspace"]
 
